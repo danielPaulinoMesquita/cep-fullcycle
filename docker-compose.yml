@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  my-go-app:
+    build: .
+    ports:
+      - "8080:8080"
