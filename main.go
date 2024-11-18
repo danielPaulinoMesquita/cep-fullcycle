@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,13 +25,16 @@ type CepResponse struct {
 var validate = validator.New()
 
 func main() {
-	http.HandleFunc("/clima", weatherHandler)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+		return
 	}
+
+	http.HandleFunc("/clima", weatherHandler)
+	port := "8080"
 	fmt.Printf("Server is running on port %s\n", port)
-	err := http.ListenAndServe(":"+port, nil)
+	err = http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		return
 	}
@@ -69,11 +74,15 @@ func weatherHandler(w http.ResponseWriter, r *http.Request) {
 func getLocationFromCep(cep string) (CepResponse, error) {
 	resp, err := http.Get("https://viacep.com.br/ws/" + cep + "/json/")
 	if err != nil {
+		log.Printf("Erro ao fazer a requisição para o ViaCEP: %v", err)
+
 		return CepResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("Resposta inválida do ViaCEP: %s", resp.Status)
+
 		return CepResponse{}, fmt.Errorf("invalid cep")
 	}
 
@@ -87,7 +96,7 @@ func getWeather(city string, uf string) (ClimaResponse, error) {
 	stateParam := uf
 	query := url.QueryEscape(cityParam + "," + stateParam)
 
-	apiKey := ""
+	apiKey := os.Getenv("API_KEY")
 	urlNew := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, query)
 
 	println(urlNew)
